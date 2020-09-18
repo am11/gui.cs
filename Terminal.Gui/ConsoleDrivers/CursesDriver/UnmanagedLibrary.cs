@@ -170,7 +170,7 @@ namespace Unix.Terminal {
 			if (ptr == IntPtr.Zero) {
 				throw new MissingMethodException (string.Format ("The native method \"{0}\" does not exist", methodName));
 			}
-            		return Marshal.GetDelegateForFunctionPointer<T>(ptr);  // non-generic version is obsolete
+			return Marshal.GetDelegateForFunctionPointer<T>(ptr);  // non-generic version is obsolete
 		}
 
 		/// <summary>
@@ -258,6 +258,18 @@ namespace Unix.Terminal {
 		/// </summary>
 		static class CoreCLR
 		{
+#if NET5_0
+			static CoreCLR() =>  NativeLibrary.SetDllImportResolver(typeof(CoreCLR).Assembly,
+				(string libraryName, Assembly assembly, DllImportSearchPath? searchPath) => {
+					if (libraryName == "libcoreclr.so") {
+						var module = typeof(CoreCLR).Module;
+						return Marshal.GetHINSTANCE(module);
+					}
+
+					return IntPtr.Zero; // to fallback to CoreCLR's internal resolution
+				});
+#endif
+
 			[DllImport ("libcoreclr.so")]
 			internal static extern IntPtr dlopen (string filename, int flags);
 
